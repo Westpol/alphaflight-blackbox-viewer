@@ -1,0 +1,3 @@
+/home/benno/Documents/GitHub/FPV-Wing/AlphaFlight Blackbox Viewer/build/CMakeFiles/blackbox.dir
+/home/benno/Documents/GitHub/FPV-Wing/AlphaFlight Blackbox Viewer/build/CMakeFiles/edit_cache.dir
+/home/benno/Documents/GitHub/FPV-Wing/AlphaFlight Blackbox Viewer/build/CMakeFiles/rebuild_cache.dir

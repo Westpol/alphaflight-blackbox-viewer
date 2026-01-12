@@ -1,0 +1,1 @@
+/usr/bin/cc CMakeFiles/blackbox.dir/main.c.o CMakeFiles/blackbox.dir/log_reader.c.o CMakeFiles/blackbox.dir/logging_structs.c.o -o blackbox 

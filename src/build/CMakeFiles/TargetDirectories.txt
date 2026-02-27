@@ -1,3 +1,0 @@
-/home/benno/Documents/GitHub/alphaflight-blackbox-viewer/src/build/CMakeFiles/blackbox.dir
-/home/benno/Documents/GitHub/alphaflight-blackbox-viewer/src/build/CMakeFiles/edit_cache.dir
-/home/benno/Documents/GitHub/alphaflight-blackbox-viewer/src/build/CMakeFiles/rebuild_cache.dir

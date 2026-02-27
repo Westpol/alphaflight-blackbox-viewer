@@ -1,7 +1,7 @@
 CMakeFiles/blackbox.dir/log_reader.c.o: \
- /home/benno/Documents/GitHub/FPV-Wing/AlphaFlight\ Blackbox\ Viewer/log_reader.c \
+ /home/benno/Documents/GitHub/alphaflight-blackbox-viewer/src/log_reader.c \
  /usr/include/stdc-predef.h \
- /home/benno/Documents/GitHub/FPV-Wing/AlphaFlight\ Blackbox\ Viewer/log_reader.h \
+ /home/benno/Documents/GitHub/alphaflight-blackbox-viewer/src/log_reader.h \
  /usr/lib/gcc/x86_64-linux-gnu/11/include/stdint.h /usr/include/stdint.h \
  /usr/include/x86_64-linux-gnu/bits/libc-header-start.h \
  /usr/include/features.h /usr/include/features-time64.h \
@@ -45,7 +45,7 @@ CMakeFiles/blackbox.dir/log_reader.c.o: \
  /usr/include/x86_64-linux-gnu/bits/struct_rwlock.h /usr/include/alloca.h \
  /usr/include/x86_64-linux-gnu/bits/stdlib-float.h \
  /usr/lib/gcc/x86_64-linux-gnu/11/include/stdbool.h \
- /home/benno/Documents/GitHub/FPV-Wing/AlphaFlight\ Blackbox\ Viewer/logging_structs.h \
+ /home/benno/Documents/GitHub/alphaflight-blackbox-viewer/src/logging_structs.h \
  /usr/include/stdio.h /usr/lib/gcc/x86_64-linux-gnu/11/include/stdarg.h \
  /usr/include/x86_64-linux-gnu/bits/types/__fpos_t.h \
  /usr/include/x86_64-linux-gnu/bits/types/__mbstate_t.h \
@@ -70,4 +70,4 @@ CMakeFiles/blackbox.dir/log_reader.c.o: \
  /usr/include/x86_64-linux-gnu/bits/time.h \
  /usr/include/x86_64-linux-gnu/bits/types/struct_tm.h \
  /usr/include/x86_64-linux-gnu/bits/types/struct_itimerspec.h \
- /home/benno/Documents/GitHub/FPV-Wing/AlphaFlight\ Blackbox\ Viewer/main.h
+ /home/benno/Documents/GitHub/alphaflight-blackbox-viewer/src/main.h

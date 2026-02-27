@@ -1,7 +1,7 @@
 CMakeFiles/blackbox.dir/logging_structs.c.o: \
- /home/benno/Documents/GitHub/FPV-Wing/AlphaFlight\ Blackbox\ Viewer/logging_structs.c \
+ /home/benno/Documents/GitHub/alphaflight-blackbox-viewer/src/logging_structs.c \
  /usr/include/stdc-predef.h \
- /home/benno/Documents/GitHub/FPV-Wing/AlphaFlight\ Blackbox\ Viewer/logging_structs.h \
+ /home/benno/Documents/GitHub/alphaflight-blackbox-viewer/src/logging_structs.h \
  /usr/lib/gcc/x86_64-linux-gnu/11/include/stdint.h /usr/include/stdint.h \
  /usr/include/x86_64-linux-gnu/bits/libc-header-start.h \
  /usr/include/features.h /usr/include/features-time64.h \
@@ -31,4 +31,4 @@ CMakeFiles/blackbox.dir/logging_structs.c.o: \
  /usr/include/x86_64-linux-gnu/bits/types/locale_t.h \
  /usr/include/x86_64-linux-gnu/bits/types/__locale_t.h \
  /usr/include/strings.h \
- /home/benno/Documents/GitHub/FPV-Wing/AlphaFlight\ Blackbox\ Viewer/main.h
+ /home/benno/Documents/GitHub/alphaflight-blackbox-viewer/src/main.h

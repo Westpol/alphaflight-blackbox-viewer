@@ -53,10 +53,10 @@ RM = /usr/bin/cmake -E rm -f
 EQUALS = =
 
 # The top-level source directory on which CMake was run.
-CMAKE_SOURCE_DIR = "/home/benno/Documents/GitHub/FPV-Wing/AlphaFlight Blackbox Viewer"
+CMAKE_SOURCE_DIR = /home/benno/Documents/GitHub/alphaflight-blackbox-viewer/src
 
 # The top-level build directory on which CMake was run.
-CMAKE_BINARY_DIR = "/home/benno/Documents/GitHub/FPV-Wing/AlphaFlight Blackbox Viewer/build"
+CMAKE_BINARY_DIR = /home/benno/Documents/GitHub/alphaflight-blackbox-viewer/src/build
 
 # Include any dependencies generated for this target.
 include CMakeFiles/blackbox.dir/depend.make
@@ -72,44 +72,44 @@ include CMakeFiles/blackbox.dir/flags.make
 CMakeFiles/blackbox.dir/main.c.o: CMakeFiles/blackbox.dir/flags.make
 CMakeFiles/blackbox.dir/main.c.o: ../main.c
 CMakeFiles/blackbox.dir/main.c.o: CMakeFiles/blackbox.dir/compiler_depend.ts
-	@$(CMAKE_COMMAND) -E cmake_echo_color --switch=$(COLOR) --green --progress-dir="/home/benno/Documents/GitHub/FPV-Wing/AlphaFlight Blackbox Viewer/build/CMakeFiles" --progress-num=$(CMAKE_PROGRESS_1) "Building C object CMakeFiles/blackbox.dir/main.c.o"
-	/usr/bin/cc $(C_DEFINES) $(C_INCLUDES) $(C_FLAGS) -MD -MT CMakeFiles/blackbox.dir/main.c.o -MF CMakeFiles/blackbox.dir/main.c.o.d -o CMakeFiles/blackbox.dir/main.c.o -c "/home/benno/Documents/GitHub/FPV-Wing/AlphaFlight Blackbox Viewer/main.c"
+	@$(CMAKE_COMMAND) -E cmake_echo_color --switch=$(COLOR) --green --progress-dir=/home/benno/Documents/GitHub/alphaflight-blackbox-viewer/src/build/CMakeFiles --progress-num=$(CMAKE_PROGRESS_1) "Building C object CMakeFiles/blackbox.dir/main.c.o"
+	/usr/bin/cc $(C_DEFINES) $(C_INCLUDES) $(C_FLAGS) -MD -MT CMakeFiles/blackbox.dir/main.c.o -MF CMakeFiles/blackbox.dir/main.c.o.d -o CMakeFiles/blackbox.dir/main.c.o -c /home/benno/Documents/GitHub/alphaflight-blackbox-viewer/src/main.c
 
 CMakeFiles/blackbox.dir/main.c.i: cmake_force
 	@$(CMAKE_COMMAND) -E cmake_echo_color --switch=$(COLOR) --green "Preprocessing C source to CMakeFiles/blackbox.dir/main.c.i"
-	/usr/bin/cc $(C_DEFINES) $(C_INCLUDES) $(C_FLAGS) -E "/home/benno/Documents/GitHub/FPV-Wing/AlphaFlight Blackbox Viewer/main.c" > CMakeFiles/blackbox.dir/main.c.i
+	/usr/bin/cc $(C_DEFINES) $(C_INCLUDES) $(C_FLAGS) -E /home/benno/Documents/GitHub/alphaflight-blackbox-viewer/src/main.c > CMakeFiles/blackbox.dir/main.c.i
 
 CMakeFiles/blackbox.dir/main.c.s: cmake_force
 	@$(CMAKE_COMMAND) -E cmake_echo_color --switch=$(COLOR) --green "Compiling C source to assembly CMakeFiles/blackbox.dir/main.c.s"
-	/usr/bin/cc $(C_DEFINES) $(C_INCLUDES) $(C_FLAGS) -S "/home/benno/Documents/GitHub/FPV-Wing/AlphaFlight Blackbox Viewer/main.c" -o CMakeFiles/blackbox.dir/main.c.s
+	/usr/bin/cc $(C_DEFINES) $(C_INCLUDES) $(C_FLAGS) -S /home/benno/Documents/GitHub/alphaflight-blackbox-viewer/src/main.c -o CMakeFiles/blackbox.dir/main.c.s
 
 CMakeFiles/blackbox.dir/log_reader.c.o: CMakeFiles/blackbox.dir/flags.make
 CMakeFiles/blackbox.dir/log_reader.c.o: ../log_reader.c
 CMakeFiles/blackbox.dir/log_reader.c.o: CMakeFiles/blackbox.dir/compiler_depend.ts
-	@$(CMAKE_COMMAND) -E cmake_echo_color --switch=$(COLOR) --green --progress-dir="/home/benno/Documents/GitHub/FPV-Wing/AlphaFlight Blackbox Viewer/build/CMakeFiles" --progress-num=$(CMAKE_PROGRESS_2) "Building C object CMakeFiles/blackbox.dir/log_reader.c.o"
-	/usr/bin/cc $(C_DEFINES) $(C_INCLUDES) $(C_FLAGS) -MD -MT CMakeFiles/blackbox.dir/log_reader.c.o -MF CMakeFiles/blackbox.dir/log_reader.c.o.d -o CMakeFiles/blackbox.dir/log_reader.c.o -c "/home/benno/Documents/GitHub/FPV-Wing/AlphaFlight Blackbox Viewer/log_reader.c"
+	@$(CMAKE_COMMAND) -E cmake_echo_color --switch=$(COLOR) --green --progress-dir=/home/benno/Documents/GitHub/alphaflight-blackbox-viewer/src/build/CMakeFiles --progress-num=$(CMAKE_PROGRESS_2) "Building C object CMakeFiles/blackbox.dir/log_reader.c.o"
+	/usr/bin/cc $(C_DEFINES) $(C_INCLUDES) $(C_FLAGS) -MD -MT CMakeFiles/blackbox.dir/log_reader.c.o -MF CMakeFiles/blackbox.dir/log_reader.c.o.d -o CMakeFiles/blackbox.dir/log_reader.c.o -c /home/benno/Documents/GitHub/alphaflight-blackbox-viewer/src/log_reader.c
 
 CMakeFiles/blackbox.dir/log_reader.c.i: cmake_force
 	@$(CMAKE_COMMAND) -E cmake_echo_color --switch=$(COLOR) --green "Preprocessing C source to CMakeFiles/blackbox.dir/log_reader.c.i"
-	/usr/bin/cc $(C_DEFINES) $(C_INCLUDES) $(C_FLAGS) -E "/home/benno/Documents/GitHub/FPV-Wing/AlphaFlight Blackbox Viewer/log_reader.c" > CMakeFiles/blackbox.dir/log_reader.c.i
+	/usr/bin/cc $(C_DEFINES) $(C_INCLUDES) $(C_FLAGS) -E /home/benno/Documents/GitHub/alphaflight-blackbox-viewer/src/log_reader.c > CMakeFiles/blackbox.dir/log_reader.c.i
 
 CMakeFiles/blackbox.dir/log_reader.c.s: cmake_force
 	@$(CMAKE_COMMAND) -E cmake_echo_color --switch=$(COLOR) --green "Compiling C source to assembly CMakeFiles/blackbox.dir/log_reader.c.s"
-	/usr/bin/cc $(C_DEFINES) $(C_INCLUDES) $(C_FLAGS) -S "/home/benno/Documents/GitHub/FPV-Wing/AlphaFlight Blackbox Viewer/log_reader.c" -o CMakeFiles/blackbox.dir/log_reader.c.s
+	/usr/bin/cc $(C_DEFINES) $(C_INCLUDES) $(C_FLAGS) -S /home/benno/Documents/GitHub/alphaflight-blackbox-viewer/src/log_reader.c -o CMakeFiles/blackbox.dir/log_reader.c.s
 
 CMakeFiles/blackbox.dir/logging_structs.c.o: CMakeFiles/blackbox.dir/flags.make
 CMakeFiles/blackbox.dir/logging_structs.c.o: ../logging_structs.c
 CMakeFiles/blackbox.dir/logging_structs.c.o: CMakeFiles/blackbox.dir/compiler_depend.ts
-	@$(CMAKE_COMMAND) -E cmake_echo_color --switch=$(COLOR) --green --progress-dir="/home/benno/Documents/GitHub/FPV-Wing/AlphaFlight Blackbox Viewer/build/CMakeFiles" --progress-num=$(CMAKE_PROGRESS_3) "Building C object CMakeFiles/blackbox.dir/logging_structs.c.o"
-	/usr/bin/cc $(C_DEFINES) $(C_INCLUDES) $(C_FLAGS) -MD -MT CMakeFiles/blackbox.dir/logging_structs.c.o -MF CMakeFiles/blackbox.dir/logging_structs.c.o.d -o CMakeFiles/blackbox.dir/logging_structs.c.o -c "/home/benno/Documents/GitHub/FPV-Wing/AlphaFlight Blackbox Viewer/logging_structs.c"
+	@$(CMAKE_COMMAND) -E cmake_echo_color --switch=$(COLOR) --green --progress-dir=/home/benno/Documents/GitHub/alphaflight-blackbox-viewer/src/build/CMakeFiles --progress-num=$(CMAKE_PROGRESS_3) "Building C object CMakeFiles/blackbox.dir/logging_structs.c.o"
+	/usr/bin/cc $(C_DEFINES) $(C_INCLUDES) $(C_FLAGS) -MD -MT CMakeFiles/blackbox.dir/logging_structs.c.o -MF CMakeFiles/blackbox.dir/logging_structs.c.o.d -o CMakeFiles/blackbox.dir/logging_structs.c.o -c /home/benno/Documents/GitHub/alphaflight-blackbox-viewer/src/logging_structs.c
 
 CMakeFiles/blackbox.dir/logging_structs.c.i: cmake_force
 	@$(CMAKE_COMMAND) -E cmake_echo_color --switch=$(COLOR) --green "Preprocessing C source to CMakeFiles/blackbox.dir/logging_structs.c.i"
-	/usr/bin/cc $(C_DEFINES) $(C_INCLUDES) $(C_FLAGS) -E "/home/benno/Documents/GitHub/FPV-Wing/AlphaFlight Blackbox Viewer/logging_structs.c" > CMakeFiles/blackbox.dir/logging_structs.c.i
+	/usr/bin/cc $(C_DEFINES) $(C_INCLUDES) $(C_FLAGS) -E /home/benno/Documents/GitHub/alphaflight-blackbox-viewer/src/logging_structs.c > CMakeFiles/blackbox.dir/logging_structs.c.i
 
 CMakeFiles/blackbox.dir/logging_structs.c.s: cmake_force
 	@$(CMAKE_COMMAND) -E cmake_echo_color --switch=$(COLOR) --green "Compiling C source to assembly CMakeFiles/blackbox.dir/logging_structs.c.s"
-	/usr/bin/cc $(C_DEFINES) $(C_INCLUDES) $(C_FLAGS) -S "/home/benno/Documents/GitHub/FPV-Wing/AlphaFlight Blackbox Viewer/logging_structs.c" -o CMakeFiles/blackbox.dir/logging_structs.c.s
+	/usr/bin/cc $(C_DEFINES) $(C_INCLUDES) $(C_FLAGS) -S /home/benno/Documents/GitHub/alphaflight-blackbox-viewer/src/logging_structs.c -o CMakeFiles/blackbox.dir/logging_structs.c.s
 
 # Object files for target blackbox
 blackbox_OBJECTS = \
@@ -125,7 +125,7 @@ blackbox: CMakeFiles/blackbox.dir/log_reader.c.o
 blackbox: CMakeFiles/blackbox.dir/logging_structs.c.o
 blackbox: CMakeFiles/blackbox.dir/build.make
 blackbox: CMakeFiles/blackbox.dir/link.txt
-	@$(CMAKE_COMMAND) -E cmake_echo_color --switch=$(COLOR) --green --bold --progress-dir="/home/benno/Documents/GitHub/FPV-Wing/AlphaFlight Blackbox Viewer/build/CMakeFiles" --progress-num=$(CMAKE_PROGRESS_4) "Linking C executable blackbox"
+	@$(CMAKE_COMMAND) -E cmake_echo_color --switch=$(COLOR) --green --bold --progress-dir=/home/benno/Documents/GitHub/alphaflight-blackbox-viewer/src/build/CMakeFiles --progress-num=$(CMAKE_PROGRESS_4) "Linking C executable blackbox"
 	$(CMAKE_COMMAND) -E cmake_link_script CMakeFiles/blackbox.dir/link.txt --verbose=$(VERBOSE)
 
 # Rule to build all files generated by this target.
@@ -137,6 +137,6 @@ CMakeFiles/blackbox.dir/clean:
 .PHONY : CMakeFiles/blackbox.dir/clean
 
 CMakeFiles/blackbox.dir/depend:
-	cd "/home/benno/Documents/GitHub/FPV-Wing/AlphaFlight Blackbox Viewer/build" && $(CMAKE_COMMAND) -E cmake_depends "Unix Makefiles" "/home/benno/Documents/GitHub/FPV-Wing/AlphaFlight Blackbox Viewer" "/home/benno/Documents/GitHub/FPV-Wing/AlphaFlight Blackbox Viewer" "/home/benno/Documents/GitHub/FPV-Wing/AlphaFlight Blackbox Viewer/build" "/home/benno/Documents/GitHub/FPV-Wing/AlphaFlight Blackbox Viewer/build" "/home/benno/Documents/GitHub/FPV-Wing/AlphaFlight Blackbox Viewer/build/CMakeFiles/blackbox.dir/DependInfo.cmake" --color=$(COLOR)
+	cd /home/benno/Documents/GitHub/alphaflight-blackbox-viewer/src/build && $(CMAKE_COMMAND) -E cmake_depends "Unix Makefiles" /home/benno/Documents/GitHub/alphaflight-blackbox-viewer/src /home/benno/Documents/GitHub/alphaflight-blackbox-viewer/src /home/benno/Documents/GitHub/alphaflight-blackbox-viewer/src/build /home/benno/Documents/GitHub/alphaflight-blackbox-viewer/src/build /home/benno/Documents/GitHub/alphaflight-blackbox-viewer/src/build/CMakeFiles/blackbox.dir/DependInfo.cmake --color=$(COLOR)
 .PHONY : CMakeFiles/blackbox.dir/depend
 

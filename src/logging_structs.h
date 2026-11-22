@@ -1,30 +1,23 @@
-#ifndef LOGGING_STRUCT_H
-#define LOGGING_STRUCT_H
+#ifndef LOGGING_STRUCTS_H
+#define LOGGING_STRUCTS_H
 
 #include <stdint.h>
 #include <stdio.h>
 
-static struct __attribute__((packed)){
+/* Record IDs and packed layouts copied from the FC logger. */
+enum {
+    LOG_RECORD_TIMESTAMP = 0x01,
+    LOG_RECORD_GPS       = 0x02,
+    LOG_RECORD_IMU       = 0x03,
+    LOG_RECORD_SERVO     = 0x04
+};
+
+typedef struct __attribute__((packed)) {
     uint8_t id;
-    uint8_t padding;
-    int16_t wx;
-    int16_t wy;
-    int16_t wz;
+    uint32_t millis;
+} log_timestamp_t;
 
-    int16_t accx;
-    int16_t accy;
-    int16_t accz;
-
-    int16_t quat_w;
-    int16_t quat_x;
-    int16_t quat_y;
-    int16_t quat_z;
-
-    int16_t pitch;
-    int16_t roll;
-} imu;
-
-static struct __attribute__((packed)){
+typedef struct __attribute__((packed)) {
     uint8_t id;
     uint8_t numSV;
     uint8_t padding[2];
@@ -34,27 +27,22 @@ static struct __attribute__((packed)){
     int32_t speed;
     int32_t height;
     int32_t course;
-} gps;
+} log_gps_t;
 
-static struct __attribute__((packed)){
+typedef struct __attribute__((packed)) {
+    uint8_t id;
+    uint8_t padding;
+    int16_t wx, wy, wz;
+    int16_t accx, accy, accz;
+    int16_t quat_w, quat_x, quat_y, quat_z;
+    int16_t pitch, roll;
+} log_imu_t;
+
+typedef struct __attribute__((packed)) {
     uint8_t id;
     uint8_t padding;
     uint16_t pwm[4];
     uint16_t dshot;
-} servo_motor_out_needed;
-
-
-typedef struct{
-	uint8_t id;
-	uint8_t (*decode)(const uint8_t* raw, uint8_t mode, FILE *file);
-} DECODER_T;
-
-uint8_t copy_struct_onboard_sensors(const uint8_t* raw, uint8_t mode, FILE *file);
-
-uint8_t copy_struct_crsf(const uint8_t* raw, uint8_t mode, FILE *file);
-
-uint8_t copy_struct_gps(const uint8_t* raw, uint8_t mode, FILE *file);
-
-uint8_t copy_struct_pid(const uint8_t* raw, uint8_t mode, FILE *file);
+} log_servo_t;
 
 #endif

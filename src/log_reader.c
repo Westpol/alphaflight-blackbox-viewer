@@ -1,294 +1,335 @@
+#define _FILE_OFFSET_BITS 64
 #include "log_reader.h"
 #include "logging_structs.h"
+
 #include <stdio.h>
 #include <stdint.h>
+#include <stdlib.h>
+#include <string.h>
 #include <fcntl.h>
 #include <unistd.h>
-#include <string.h>
-#include <stdbool.h>
 #include <time.h>
-#include "main.h"
+#include <inttypes.h>
+#include <errno.h>
 
-uint8_t super_block_buffer[512] = {0};
-uint8_t metadata_block_buffer[512] = {0};
-int fd;
-SD_SUPERBLOCK sd_superblock;
-SD_FILE_METADATA_BLOCK sd_metadata_block;
-SD_FILE_METADATA_CHUNK flight_metadada;
+typedef struct __attribute__((packed)) {
+    uint32_t magic;
+    uint32_t version;
+    uint32_t seq;
+    uint32_t curr_flight_num_rel;
+    uint32_t curr_flight_num_abs;
+    uint32_t flags;
+    uint32_t metadata_block_start;
+    uint32_t metadata_block_end;
+    uint32_t data_block_start;
+    uint32_t data_block_end;
+} superblock_t;
 
-DECODER_T decoder[] = {{LOG_TYPE_DISABLE_LOGGING, NULL}, {LOG_TYPE_ONBOARD_SENSORS, copy_struct_onboard_sensors}, {LOG_TYPE_CRSF, copy_struct_crsf}, {LOG_TYPE_GPS, copy_struct_gps}, {LOG_TYPE_PID, copy_struct_pid}};
+typedef struct __attribute__((packed)) {
+    uint32_t magic;
+    uint32_t version;
+    uint32_t flight_num_abs;
+    uint32_t timestamp;
+    uint32_t start_ms;
+    uint32_t end_ms;
+    int32_t lat;
+    int32_t lon;
+    uint32_t start_block;
+    uint32_t end_block;
+    uint32_t flags;
+} metadata_t;
 
+#define METADATA_PER_BLOCK (BLOCK_SIZE / sizeof(metadata_t))
 
-#define START_MAGIC ((uint16_t)0xC85A)
-#define END_MAGIC ~((uint16_t)0xC85A)
+static int g_fd = -1;
+static superblock_t g_sb;
+static metadata_t g_flight;
 
-uint32_t crc32_stm32(const uint8_t* data, int length)
+static int read_block(uint32_t block, uint8_t data[BLOCK_SIZE])
 {
-    uint32_t crc = 0xFFFFFFFF;
-
-    size_t i = 0;
-    while (length >= 4) {
-        uint32_t word = data[i] | (data[i+1] << 8) | (data[i+2] << 16) | (data[i+3] << 24);
-        // simulate __REV(word)
-        word = ((word & 0xFF) << 24) | ((word & 0xFF00) << 8) | ((word & 0xFF0000) >> 8) | ((word & 0xFF000000) >> 24);
-
-        crc ^= word;
-
-        for (int b = 0; b < 32; b++) {
-            if (crc & 0x80000000)
-                crc = (crc << 1) ^ 0x04C11DB7;
-            else
-                crc <<= 1;
-        }
-
-        i += 4;
-        length -= 4;
+    off_t offset = (off_t)block * BLOCK_SIZE;
+    if (lseek(g_fd, offset, SEEK_SET) != offset) {
+        perror("lseek");
+        return -1;
     }
-
-    if (length > 0) {
-        uint32_t word = 0;
-        for (int j = 0; j < length; j++)
-            word |= data[i+j] << (8 * j); // little-endian into lower bytes
-
-        // simulate __REV(word)
-        word = ((word & 0xFF) << 24) | ((word & 0xFF00) << 8) | ((word & 0xFF0000) >> 8) | ((word & 0xFF000000) >> 24);
-
-        crc ^= word;
-
-        for (int b = 0; b < 32; b++) {
-            if (crc & 0x80000000)
-                crc = (crc << 1) ^ 0x04C11DB7;
-            else
-                crc <<= 1;
-        }
+    ssize_t n = read(g_fd, data, BLOCK_SIZE);
+    if (n != (ssize_t)BLOCK_SIZE) {
+        if (n < 0) perror("read");
+        else fprintf(stderr, "Short read at block %u: %zd bytes\n", block, n);
+        return -1;
     }
-
-    return crc; // this is exactly what hardware would output in DR
-}
-
-
-
-static uint32_t FLIGHT_NUM_TO_BLOCK(uint32_t relative_flight_num){
-	uint32_t block = 0;
-
-	block = LOG_METADATA_BLOCK_START + relative_flight_num / LOG_FILES_PER_METADATA_BLOCK;
-
-	return block;
-}
-
-static uint8_t FLIGHT_NUM_TO_INDEX(uint32_t relative_flight_num){
-	uint8_t index = 0;
-
-	index = relative_flight_num % LOG_FILES_PER_METADATA_BLOCK;
-
-	return index;
-}
-
-static int READ_SINGLE_BLOCK(uint8_t* BUFFER, uint32_t BLOCK){
-    off_t offset = BLOCK * BLOCK_SIZE;
-    if (lseek(fd, offset, SEEK_SET) != offset) {
-        perror("Seek failed");
-        return 1;
-    }
-
-    ssize_t bytes_read = read(fd, BUFFER, BLOCK_SIZE);
-    if (bytes_read != BLOCK_SIZE) {
-        perror("Read failed");
-        return 1;
-    }
-
-    #if ENABLE_CRC
-    uint32_t calculated_block_crc32 = crc32_stm32(BUFFER, 508);
-    uint32_t block_crc;
-    memcpy(&block_crc, BUFFER + 508, sizeof(block_crc));
-    if(block_crc != calculated_block_crc32){
-        printf("Problem with Block %d\n", BLOCK);
-        printf("Calculated CRC: %08X\n", calculated_block_crc32);
-        printf("Block CRC     : %08X\n", block_crc);
-        //fprintf(stderr, "Block CRC wrong");
-        return 1;
-    }
-    #endif
-
     return 0;
 }
 
-static void PRINT_FLIGHT_DATA(){
-    uint8_t block_buffer[512];
-    for(uint32_t i = flight_metadada.start_block; i <= flight_metadada.end_block; i++){
-        READ_SINGLE_BLOCK(block_buffer, i);
-        uint16_t start_magic = 0;
-        uint16_t end_magic = 0;
-        for(int i = 0; i < 504; i++){
-
-            start_magic = 0;
-            end_magic = 0;
-
-            start_magic = ((uint16_t)block_buffer[i+1] << 8) | (uint16_t)block_buffer[i];
-
-            if(start_magic == START_MAGIC){
-                printf("STRUCT FOUND AT INDEX %d\n", i);
-                //int struct_length = block_buffer[i + 4];
-                //printf("STRUCT LENGTH: %d\n", struct_length);
-                int struct_id = block_buffer[i + 3];
-                //printf("STRUCT ID: %d\n", struct_id);
-
-                end_magic = ((uint16_t)block_buffer[i + block_buffer[i + 2] - 2 + 1] << 8) | ((uint16_t)block_buffer[i + block_buffer[i + 2] - 2]);
-                printf("END MAGIC: 0x%08X\n\n", end_magic);
-
-                decoder[struct_id].decode(&block_buffer[i], 1, NULL);
-
-
-                i += block_buffer[i+2] - 1;
-
-                continue;
-            }
-        }
-    }
-}
-
-static void EXPORT_FLIGHT(FILE *file){
-    uint8_t block_buffer[512];
-    for(uint32_t i = flight_metadada.start_block; i <= flight_metadada.end_block; i++){
-        READ_SINGLE_BLOCK(block_buffer, i);
-        uint16_t start_magic = 0;
-        uint16_t end_magic = 0;
-        for(int i = 0; i < 504; i++){
-
-            start_magic = 0;
-            end_magic = 0;
-
-            start_magic = ((uint16_t)block_buffer[i+1] << 8) | (uint16_t)block_buffer[i];
-
-            if(start_magic == START_MAGIC){
-                printf("STRUCT FOUND AT INDEX %d\n", i);
-                //int struct_length = block_buffer[i + 4];
-                //printf("STRUCT LENGTH: %d\n", struct_length);
-                int struct_id = block_buffer[i + 3];
-                //printf("STRUCT ID: %d\n", struct_id);
-
-                end_magic = ((uint16_t)block_buffer[i + block_buffer[i + 2] - 2 + 1] << 8) | ((uint16_t)block_buffer[i + block_buffer[i + 2] - 2]);
-                printf("END MAGIC: 0x%08X\n\n", end_magic);
-
-                decoder[struct_id].decode(&block_buffer[i], 2, file);
-
-
-                i += block_buffer[i+2] - 1;
-
-                continue;
-            }
-        }
-    }
-}
-
-static void DUMP_FLIGHT_TO_BIN(const char* filename){
-    const int start_block = flight_metadada.start_block;
-    const int end_block = flight_metadada.end_block;
-    uint8_t block_buffer[512] = {0};
-    FILE* of = fopen(filename, "wb");
-    for(int i = start_block; i <= end_block; i++){
-        READ_SINGLE_BLOCK(block_buffer, i);
-        fwrite(block_buffer, 1, BLOCK_SIZE, of);
-    }
-    fclose(of);
-}
-
-int INITIALIZE_SD_CARD(const char* PATH, bool ENABLE_BIN_FILE, const char* BIN_FILENAME, bool ENABLE_CSV_FILE, const char* CSV_FILENAME, bool PRINT_ENABLE){
-    fd = open(PATH, O_RDONLY);
-    if (fd < 0) {
-        perror("Failed to open device");
-        return 1;
+static int load_superblock(void)
+{
+    uint8_t raw[2][BLOCK_SIZE];
+    superblock_t candidates[2] = {{0}};
+    for (unsigned i = 0; i < 2; ++i) {
+        if (read_block(SUPERBLOCK_ADDRESS_START + i, raw[i]) != 0)
+            return -1;
+        memcpy(&candidates[i], raw[i], sizeof(superblock_t));
     }
 
-    if (READ_SINGLE_BLOCK(super_block_buffer, SUPERBLOCK_INDEX) != 0) {
-        fprintf(stderr, "Failed to read superblock\n");
-        //close(fd);
-        return 1;
+    int valid0 = candidates[0].magic == SUPERBLOCK_MAGIC;
+    int valid1 = candidates[1].magic == SUPERBLOCK_MAGIC;
+    if (!valid0 && !valid1) {
+        fprintf(stderr, "No valid filesystem superblock found (expected magic %08" PRIX32 ").\n",
+                SUPERBLOCK_MAGIC);
+        return -1;
     }
-    memcpy(&sd_superblock, &super_block_buffer, sizeof(sd_superblock));
-    
-    if(sd_superblock.magic != SUPERBLOCK_MAGIC){
-        printf("Wrong superblock magic number\n");
-        return 1;
+    if (valid0 && (!valid1 || candidates[0].seq > candidates[1].seq))
+        g_sb = candidates[0];
+    else
+        g_sb = candidates[1];
+
+    if (g_sb.version != 0) {
+        fprintf(stderr, "Warning: superblock version is %u, viewer expects version 0.\n",
+                g_sb.version);
     }
-    int minimum_flight_num = sd_superblock.absolute_flight_num - sd_superblock.relative_flight_num;
-    int maximum_flight_num = sd_superblock.relative_flight_num - 1;
-    if(sd_superblock.relative_flight_num == 0){
-        printf("No flights on SD card!\n");
-        return 1;
-    }
-    printf("Choose between flight number %d and %d: ", minimum_flight_num, maximum_flight_num);
-    int flight_chosen;
-    while(1){
-        scanf("%d", &flight_chosen);
-        if(flight_chosen >= minimum_flight_num && flight_chosen <= maximum_flight_num) break;
-        printf("Wrong input. Try again.\n");
-    }
-
-    if (READ_SINGLE_BLOCK(metadata_block_buffer, FLIGHT_NUM_TO_BLOCK(flight_chosen)) != 0) {
-        fprintf(stderr, "Failed to read metadata block\n");
-        //close(fd);
-        return 1;
-    }
-    memcpy(&sd_metadata_block, &metadata_block_buffer, sizeof(sd_metadata_block));
-    flight_metadada = sd_metadata_block.sd_file_metadata_chunk[FLIGHT_NUM_TO_INDEX(flight_chosen)];
-
-
-
-
-    #if VERBOSE_OUTPUT
-    printf("Superblock version: %d\nRelative flight number: %d\nMagic number: %08X\n", sd_superblock.version, sd_superblock.relative_flight_num, sd_superblock.magic);
-    for(int i = 0; i < sd_superblock.relative_flight_num; i++){
-        //printf("Flight %d, read block %d, index %d\n", i, FLIGHT_NUM_TO_BLOCK(i), FLIGHT_NUM_TO_INDEX(i));
-        printf("Flight %d, active flag %d, completion flag %d, start block %d, end block %d\n", sd_metadata_block.sd_file_metadata_chunk[i].flight_number, sd_metadata_block.sd_file_metadata_chunk[i].active_flag, sd_metadata_block.sd_file_metadata_chunk[i].log_finished, sd_metadata_block.sd_file_metadata_chunk[i].start_block, sd_metadata_block.sd_file_metadata_chunk[i].end_block);
-    }
-    #endif
-
-
-
-
-    printf("Flight %d, active flag %d, completion flag %d, start block %d, end block %d\n\n", flight_metadada.flight_number, flight_metadada.active_flag, flight_metadada.log_finished, flight_metadada.start_block, flight_metadada.end_block);
-    printf("Active log types:\n");
-
-    const char* log_types[64];
-    log_types[1] = "ONBOARD_SENSORS";
-    log_types[2] = "CRSF";
-    log_types[3] = "GPS";
-    log_types[4] = "PID";
-    for(int i = 1; i < 64; i++){
-        if((flight_metadada.log_mode >> i) && 1){
-            printf("%s\n", log_types[i]);
-        }
-    }
-    printf("\n");
-
-    char buff[21];
-    const long int time_unix = flight_metadada.timestamp_unix;
-    strftime(buff, 20, "%d.%m.%Y %H:%M:%S", localtime(&time_unix));
-    buff[20] = '\0';
-    printf("%s\n\n", buff);
-
-    if(PRINT_ENABLE){
-        printf("Printing Data...\n");
-        PRINT_FLIGHT_DATA();
-        printf("\n\nDone.");
-    }
-
-    if(ENABLE_BIN_FILE){
-        printf("\n\nDumping data to %s...\n", BIN_FILENAME);
-        DUMP_FLIGHT_TO_BIN(BIN_FILENAME);
-        printf("Done.\n");
-    }
-
-    if(ENABLE_CSV_FILE){
-        printf("\nExporting to %s...\n", CSV_FILENAME);
-        FILE *csv_file = fopen(CSV_FILENAME, "w");
-        fprintf(csv_file, "HEADER\n");
-        EXPORT_FLIGHT(csv_file);
-        fclose(csv_file);
-        printf("Done.\n");
-    }
-
-    close(fd);
     return 0;
+}
+
+static int load_flight_by_relative(uint32_t relative_num, metadata_t *result)
+{
+    uint32_t block = g_sb.metadata_block_start + relative_num / METADATA_PER_BLOCK;
+    uint32_t index = relative_num % METADATA_PER_BLOCK;
+
+    if (block > g_sb.metadata_block_end) {
+        fprintf(stderr, "Metadata block %u is outside configured metadata range.\n", block);
+        return -1;
+    }
+
+    uint8_t raw[BLOCK_SIZE];
+    if (read_block(block, raw) != 0)
+        return -1;
+
+    memcpy(result, raw + index * sizeof(metadata_t), sizeof(metadata_t));
+    if (result->magic != METADATA_MAGIC) {
+        fprintf(stderr, "Invalid metadata magic for relative flight %u.\n", relative_num);
+        return -1;
+    }
+    return 0;
+}
+
+static int find_flight(uint32_t absolute_num)
+{
+    /* The FC stores completed flights in relative-number order. */
+    for (uint32_t rel = 0; rel < g_sb.curr_flight_num_rel; ++rel) {
+        metadata_t m;
+        if (load_flight_by_relative(rel, &m) == 0 && m.flight_num_abs == absolute_num) {
+            g_flight = m;
+            return 0;
+        }
+    }
+    return -1;
+}
+
+static void print_record(const uint8_t *p, uint8_t id)
+{
+    switch (id) {
+    case LOG_RECORD_TIMESTAMP: {
+        log_timestamp_t r;
+        memcpy(&r, p, sizeof r);
+        printf("TIMESTAMP millis=%d\n", r.millis);
+        break;
+    }
+    case LOG_RECORD_GPS: {
+        log_gps_t r;
+        memcpy(&r, p, sizeof r);
+        printf("GPS time=%u lat=%d lon=%" PRId32
+               " speed=%d height=%d course=%" PRId32
+               " sats=%u\n", r.timestamp, r.lat, r.lon, r.speed, r.height,
+               r.course, r.numSV);
+        break;
+    }
+    case LOG_RECORD_IMU: {
+        log_imu_t r;
+        memcpy(&r, p, sizeof r);
+        printf("IMU gyro=(%d,%d,%d) accel=(%d,%d,%d) quat=(%d,%d,%d,%d) pitch=%d roll=%d\n",
+               r.wx, r.wy, r.wz, r.accx, r.accy, r.accz,
+               r.quat_w, r.quat_x, r.quat_y, r.quat_z, r.pitch, r.roll);
+        break;
+    }
+    case LOG_RECORD_SERVO: {
+        log_servo_t r;
+        memcpy(&r, p, sizeof r);
+        printf("SERVO pwm=(%u,%u,%u,%u) dshot=%u\n",
+               r.pwm[0], r.pwm[1], r.pwm[2], r.pwm[3], r.dshot);
+        break;
+    }
+    default:
+        printf("Unknown record id 0x%02X\n", id);
+        break;
+    }
+}
+
+static void csv_record(FILE *f, const uint8_t *p, uint8_t id)
+{
+    switch (id) {
+    case LOG_RECORD_TIMESTAMP: {
+        log_timestamp_t r; memcpy(&r, p, sizeof r);
+        fprintf(f, "TIMESTAMP,%u\n", r.millis);
+        break;
+    }
+    case LOG_RECORD_GPS: {
+        log_gps_t r; memcpy(&r, p, sizeof r);
+        fprintf(f, "GPS,%u,%u,%d,%d,%d,%d,%d\n",
+                r.timestamp, r.numSV, r.lat, r.lon, r.speed, r.height, r.course);
+        break;
+    }
+    case LOG_RECORD_IMU: {
+        log_imu_t r; memcpy(&r, p, sizeof r);
+        fprintf(f, "IMU,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d\n",
+                r.wx, r.wy, r.wz, r.accx, r.accy, r.accz,
+                r.quat_w, r.quat_x, r.quat_y, r.quat_z, r.pitch, r.roll);
+        break;
+    }
+    case LOG_RECORD_SERVO: {
+        log_servo_t r; memcpy(&r, p, sizeof r);
+        fprintf(f, "SERVO,%u,%u,%u,%u,%u\n",
+                r.pwm[0], r.pwm[1], r.pwm[2], r.pwm[3], r.dshot);
+        break;
+    }
+    default:
+        fprintf(f, "UNKNOWN,%u\n", id);
+        break;
+    }
+}
+
+/* Each data block starts with the 4-byte absolute flight number.
+   Records immediately follow; unlike the previous viewer format there are
+   no frame-start/frame-end magic values or per-record length bytes. */
+static int process_flight(FILE *csv, int print_enable)
+{
+    uint8_t block[BLOCK_SIZE];
+    if (g_flight.start_block > g_flight.end_block ||
+        g_flight.start_block < g_sb.data_block_start ||
+        g_flight.end_block > g_sb.data_block_end) {
+        fprintf(stderr, "Flight data block range is invalid.\n");
+        return -1;
+    }
+
+    for (uint32_t b = g_flight.start_block; ; ++b) {
+        if (read_block(b, block) != 0)
+            return -1;
+
+        uint32_t block_flight_num;
+        memcpy(&block_flight_num, block, sizeof block_flight_num);
+        if (block_flight_num != g_flight.flight_num_abs) {
+            fprintf(stderr, "Warning: block %u belongs to flight %" PRIu32
+                    ", expected %u.\n",
+                    b, block_flight_num, g_flight.flight_num_abs);
+        }
+
+        size_t pos = sizeof(uint32_t);
+        while (pos < BLOCK_SIZE) {
+            uint8_t id = block[pos];
+            if (id == 0)
+                break; /* Remaining bytes are zero padding. */
+
+            size_t record_size;
+            switch (id) {
+            case LOG_RECORD_TIMESTAMP: record_size = sizeof(log_timestamp_t); break;
+            case LOG_RECORD_GPS:       record_size = sizeof(log_gps_t); break;
+            case LOG_RECORD_IMU:       record_size = sizeof(log_imu_t); break;
+            case LOG_RECORD_SERVO:     record_size = sizeof(log_servo_t); break;
+            default:
+                fprintf(stderr, "Unknown record id 0x%02X at block %" PRIu32
+                        " offset %zu; cannot safely resynchronise.\n", id, b, pos);
+                return -1;
+            }
+
+            if (record_size > BLOCK_SIZE - pos) {
+                fprintf(stderr, "Truncated record at end of block %u.\n", b);
+                break;
+            }
+
+            if (print_enable) print_record(block + pos, id);
+            if (csv) csv_record(csv, block + pos, id);
+            pos += record_size;
+        }
+
+        if (b == g_flight.end_block)
+            break;
+    }
+    return 0;
+}
+
+static int dump_binary(const char *filename)
+{
+    FILE *out = fopen(filename, "wb");
+    if (!out) { perror("fopen binary output"); return -1; }
+
+    uint8_t block[BLOCK_SIZE];
+    for (uint32_t b = g_flight.start_block; ; ++b) {
+        if (read_block(b, block) != 0 ||
+            fwrite(block, 1, BLOCK_SIZE, out) != BLOCK_SIZE) {
+            perror("Writing binary output");
+            fclose(out);
+            return -1;
+        }
+        if (b == g_flight.end_block) break;
+    }
+    fclose(out);
+    return 0;
+}
+
+int INITIALIZE_SD_CARD(const char *PATH,
+                       bool ENABLE_BIN_FILE, const char *BIN_FILENAME,
+                       bool ENABLE_CSV_FILE, const char *CSV_FILENAME,
+                       bool PRINT_ENABLE)
+{
+    g_fd = open(PATH, O_RDONLY);
+    if (g_fd < 0) { perror("Failed to open SD image/device"); return 1; }
+
+    int rc = 1;
+    if (load_superblock() != 0) goto done;
+
+    if (g_sb.curr_flight_num_rel == 0) {
+        printf("No completed flights recorded on the SD card.\n");
+        goto done;
+    }
+
+    printf("Completed flights: %u\n", g_sb.curr_flight_num_rel);
+    printf("Enter absolute flight number: ");
+    uint32_t chosen;
+    if (scanf("%" SCNu32, &chosen) != 1) {
+        fprintf(stderr, "Invalid flight number.\n");
+        goto done;
+    }
+    if (find_flight(chosen) != 0) {
+        fprintf(stderr, "Flight %u was not found in metadata.\n", chosen);
+        goto done;
+    }
+
+    printf("Flight %u: start block=%u, end block=%" PRIu32
+           ", start_ms=%u, end_ms=%u\n",
+           g_flight.flight_num_abs, g_flight.start_block, g_flight.end_block,
+           g_flight.start_ms, g_flight.end_ms);
+    printf("GPS start position: lat=%d, lon=%d\n",
+           g_flight.lat, g_flight.lon);
+
+    if (ENABLE_BIN_FILE) {
+        if (!BIN_FILENAME || dump_binary(BIN_FILENAME) != 0) goto done;
+        printf("Binary dump written to %s\n", BIN_FILENAME);
+    }
+    if (ENABLE_CSV_FILE) {
+        if (!CSV_FILENAME) { fprintf(stderr, "Missing CSV filename.\n"); goto done; }
+        FILE *csv = fopen(CSV_FILENAME, "w");
+        if (!csv) { perror("fopen CSV output"); goto done; }
+        fprintf(csv, "type,timestamp_or_value_1,value_2,value_3,value_4,value_5,value_6,value_7,value_8,value_9,value_10,value_11\n");
+        int prc = process_flight(csv, PRINT_ENABLE);
+        fclose(csv);
+        if (prc != 0) goto done;
+        printf("CSV written to %s\n", CSV_FILENAME);
+    } else if (PRINT_ENABLE) {
+        if (process_flight(NULL, 1) != 0) goto done;
+    }
+
+    rc = 0;
+done:
+    close(g_fd);
+    g_fd = -1;
+    return rc;
 }

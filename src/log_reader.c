@@ -216,10 +216,9 @@ static int process_flight(FILE *csv, int print_enable)
 
         uint32_t block_flight_num;
         memcpy(&block_flight_num, block, sizeof block_flight_num);
+        fprintf(stderr, "Block %u: flight_num=%u\n", b, block_flight_num);
         if (block_flight_num != g_flight.flight_num_abs) {
-            fprintf(stderr, "Warning: block %u belongs to flight %" PRIu32
-                    ", expected %u.\n",
-                    b, block_flight_num, g_flight.flight_num_abs);
+            fprintf(stderr, "Warning: block %u belongs to flight %u, expected %u.\n", b, block_flight_num, g_flight.flight_num_abs);
         }
 
         size_t pos = sizeof(uint32_t);
